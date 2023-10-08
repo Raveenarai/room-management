@@ -1,0 +1,179 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <ctime>
+
+class Room {
+public:
+    int roomId;
+    std::string roomType;
+    double price;
+    bool isAvailable;
+
+    Room(int id, const std::string& type, double p)
+        : roomId(id), roomType(type), price(p), isAvailable(true) {}
+};
+
+class Customer {
+public:
+    int customerId;
+    std::string name;
+    std::string email;
+
+    Customer(int id, const std::string& n, const std::string& e)
+        : customerId(id), name(n), email(e) {}
+};
+
+class Booking {
+public:
+    int bookingId;
+    int customerId;
+    int roomId;
+    time_t checkInDate;
+    time_t checkOutDate;
+
+    Booking(int id, int cId, int rId, time_t checkIn, time_t checkOut)
+        : bookingId(id), customerId(cId), roomId(rId), checkInDate(checkIn), checkOutDate(checkOut) {}
+};
+
+class Payment {
+public:
+    int paymentId;
+    int bookingId;
+    double amount;
+    time_t paymentDate;
+
+    Payment(int id, int bId, double amt, time_t date)
+        : paymentId(id), bookingId(bId), amount(amt), paymentDate(date) {}
+};
+
+class Hotel {
+private:
+    std::vector<Room> rooms;
+    std::vector<Customer> customers;
+    std::vector<Booking> bookings;
+    std::vector<Payment> payments;
+    int currentCustomerId;
+    int currentBookingId;
+    int currentPaymentId;
+
+public:
+    Hotel() : currentCustomerId(1), currentBookingId(1), currentPaymentId(1) {
+        // Initialize rooms
+        rooms.push_back(Room(101, "Single", 100.0));
+        rooms.push_back(Room(102, "Double", 150.0));
+        rooms.push_back(Room(103, "Suite", 250.0));
+    }
+
+    // Add a new customer to the system
+    void addCustomer(const std::string& name, const std::string& email) {
+        customers.push_back(Customer(currentCustomerId++, name, email));
+    }
+
+    // Book a room for a customer
+    bool bookRoom(int customerId, int roomId, time_t checkIn, time_t checkOut) {
+        // Check room availability and create a booking
+        for (Room& room : rooms) {
+            if (room.roomId == roomId && room.isAvailable) {
+                room.isAvailable = false;
+                bookings.push_back(Booking(currentBookingId++, customerId, roomId, checkIn, checkOut));
+                return true;
+            }
+        }
+        return false; // Room not available or does not exist
+    }
+
+    // Make a payment for a booking
+    bool makePayment(int bookingId, double amount) {
+        for (Booking& booking : bookings) {
+            if (booking.bookingId == bookingId) {
+                payments.push_back(Payment(currentPaymentId++, bookingId, amount, time(nullptr)));
+                return true;
+            }
+        }
+        return false; // Booking not found
+    }
+
+    // Display available rooms
+    void displayAvailableRooms() {
+        std::cout << "Available Rooms:\n";
+        for (const Room& room : rooms) {
+            if (room.isAvailable) {
+                std::cout << "Room " << room.roomId << " (" << room.roomType << "): $" << room.price << "/night\n";
+            }
+        }
+    }
+};
+
+int main() {
+    Hotel hotel;
+
+    // Menu for hotel management
+    int choice;
+    do {
+        std::cout << "\nHotel Management System\n";
+        std::cout << "1. Add Customer\n";
+        std::cout << "2. Display Available Rooms\n";
+        std::cout << "3. Book a Room\n";
+        std::cout << "4. Make a Payment\n";
+        std::cout << "5. Exit\n";
+        std::cout << "Enter your choice: ";
+        std::cin >> choice;
+
+        switch (choice) {
+            case 1: {
+                std::string name, email;
+                std::cout << "Enter customer name: ";
+                std::cin.ignore(); // Consume newline character from previous input
+                std::getline(std::cin, name);
+                std::cout << "Enter customer email: ";
+                std::cin >> email;
+                hotel.addCustomer(name, email);
+                std::cout << "Customer added successfully.\n";
+                break;
+            }
+            case 2:
+                hotel.displayAvailableRooms();
+                break;
+            case 3: {
+                int customerId, roomId;
+                time_t checkIn, checkOut;
+                std::cout << "Enter customer ID: ";
+                std::cin >> customerId;
+                std::cout << "Enter room ID to book: ";
+                std::cin >> roomId;
+                std::cout << "Enter check-in timestamp (e.g., 1636838400 for 15 Nov 2021): ";
+                std::cin >> checkIn;
+                std::cout << "Enter check-out timestamp: ";
+                std::cin >> checkOut;
+                if (hotel.bookRoom(customerId, roomId, checkIn, checkOut)) {
+                    std::cout << "Room booked successfully.\n";
+                } else {
+                    std::cout << "Room booking failed.\n";
+                }
+                break;
+            }
+            case 4: {
+                int bookingId;
+                double amount;
+                std::cout << "Enter booking ID for payment: ";
+                std::cin >> bookingId;
+                std::cout << "Enter payment amount: $";
+                std::cin >> amount;
+                if (hotel.makePayment(bookingId, amount)) {
+                    std::cout << "Payment successful.\n";
+                } else {
+                    std::cout << "Payment failed.\n";
+                }
+                break;
+            }
+            case 5:
+                std::cout << "Exiting...\n";
+                break;
+            default:
+                std::cout << "Invalid choice. Try again.\n";
+        }
+    } while (choice != 5);
+
+    return 0;
+}
